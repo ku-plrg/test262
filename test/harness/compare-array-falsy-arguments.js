@@ -17,7 +17,7 @@ function assertThrows(func, errorMessage) {
         assert.sameValue(error.message, errorMessage);
     }
 
-    assert(caught, `Expected ${func} to throw, but it didn't.`);
+    assert(caught, 'Expected ' + func + ' to throw, but it didn\'t.');
 }
 
 assertThrows(() => assert.compareArray(), "Actual argument [undefined] shouldn't be primitive. ");

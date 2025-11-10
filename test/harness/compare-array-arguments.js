@@ -19,7 +19,7 @@ function checkFormatOfAssertionMessage(func, errorMessage) {
       assert.sameValue(error.message, errorMessage);
   }
 
-  assert(caught, `Expected ${func} to throw, but it didn't.`);
+  assert(caught, 'Expected ' + func + ' to throw, but it didn\'t.');
 }
 
 function f() {

@@ -17,7 +17,7 @@ function checkFormatOfAssertionMessage(func, errorMessage) {
       assert.sameValue(error.message, errorMessage);
   }
 
-  assert(caught, `Expected ${func} to throw, but it didn't.`);
+  assert(caught, 'Expected ' + func + ' to throw, but it didn\'t.');
 }
 
 const fixture = { length: 3, 0: 0, 1: 'a', 2: undefined};

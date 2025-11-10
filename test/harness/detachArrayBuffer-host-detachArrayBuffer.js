@@ -32,7 +32,7 @@ try {
     );
   }
   if (err.message !== '$262.detachArrayBuffer called.') {
-    throw new Error(`Expected error message: ${err.message}`);
+    throw new Error('Expected error message: ' + err.message);
   }
 }
 
