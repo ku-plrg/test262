@@ -13,27 +13,27 @@ assert.deepEqual = function(actual, expected, message) {
   // format can be slow when `actual` or `expected` are large objects, like for
   // example the global object, so only call it when the assertion will fail.
   if (mustBeTrue !== true) {
-    message = `Expected ${format(actual)} to be structurally equal to ${format(expected)}. ${(message || '')}`;
+    message = 'Expected ' + format(actual) + ' to be structurally equal to ' + format(expected) + '. ' + (message || '');
   }
 
   assert(mustBeTrue, message);
 };
 
 (function() {
-let getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
-let join = arr => arr.join(', ');
+var getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+var join = function (arr) { return arr.join(', '); }
 function stringFromTemplate(strings, subs) {
-  let parts = strings.map((str, i) => `${i === 0 ? '' : subs[i - 1]}${str}`);
+  var parts = strings.map(function (str, i) { return String(i === 0 ? '' : subs[i - 1]) + String(str); });
   return parts.join('');
 }
 function escapeKey(key) {
-  if (typeof key === 'symbol') return `[${String(key)}]`;
+  if (typeof key === 'symbol') return '[' + String(key) + ']';
   if (/^[a-zA-Z0-9_$]+$/.test(key)) return key;
   return assert._formatIdentityFreeValue(key);
 }
 
 assert.deepEqual.format = function(value, seen) {
-  let basic = assert._formatIdentityFreeValue(value);
+  var basic = assert._formatIdentityFreeValue(value);
   if (basic) return basic;
   switch (value === null ? 'null' : typeof value) {
     case 'string':
@@ -58,10 +58,10 @@ assert.deepEqual.format = function(value, seen) {
       map: new Map()
     };
   }
-  let usage = seen.map.get(value);
+  var usage = seen.map.get(value);
   if (usage) {
     usage.used = true;
-    return `ref #${usage.id}`;
+    return 'ref #' + usage.id;
   }
   usage = { id: ++seen.counter, used: false };
   seen.map.set(value, usage);
@@ -81,61 +81,78 @@ assert.deepEqual.format = function(value, seen) {
   // For convenience, any absent mapper is presumed to be `String`, and the
   // function itself has a toString method that self-invokes with no mappers
   // (allowing returning the function directly when every mapper is `String`).
-  function lazyResult(strings, ...subs) {
-    function acceptMappers(...mappers) {
+  function lazyResult(strings) {
+    var subs = Array.prototype.slice.call(arguments, 1);
+    function acceptMappers() {
+      var mappers = Array.prototype.slice.call(arguments);
       function toString() {
-        let renderings = subs.map((sub, i) => (mappers[i] || String)(sub));
-        let rendered = stringFromTemplate(strings, renderings);
-        if (usage.used) rendered += ` as #${usage.id}`;
+        var renderings = subs.map(function (sub, i) { return (mappers[i] || String)(sub); });
+        var rendered = stringFromTemplate(strings, renderings);
+        if (usage.used) rendered += ' as #' + usage.id;
         return rendered;
       }
 
-      return { toString };
+      return { toString: toString };
     }
 
-    acceptMappers.toString = () => String(acceptMappers());
+    acceptMappers.toString = function() { return String(acceptMappers()); };
     return acceptMappers;
   }
 
-  let format = assert.deepEqual.format;
-  function lazyString(strings, ...subs) {
-    return { toString: () => stringFromTemplate(strings, subs) };
+  var format = assert.deepEqual.format;
+  function lazyString(strings) {
+    var subs = Array.prototype.slice.call(arguments, 1);
+    return { toString: function() { return stringFromTemplate(strings, subs); } };
   }
 
   if (typeof value === 'function') {
-    return lazyResult`function${value.name ? ` ${String(value.name)}` : ''}`;
+    // return lazyResult`function${value.name ? ` ${String(value.name)}` : ''}`;
+    return lazyResult(['function', ''], value.name ? ' ' + String(value.name) : '');
   }
   if (typeof value !== 'object') {
     // probably a symbol
-    return lazyResult`${value}`;
+    // return lazyResult`${value}`;
+    return lazyResult(['', ''], value);
   }
   if (Array.isArray ? Array.isArray(value) : value instanceof Array) {
-    return lazyResult`[${value.map(value => format(value, seen))}]`(join);
+    // return lazyResult`[${value.map(value => format(value, seen))}]`(join);
+    var contents = value.map(function (value) { return format(value, seen); });
+    return lazyResult(['[', ']'], contents)(join);
   }
   if (value instanceof Date) {
-    return lazyResult`Date(${format(value.toISOString(), seen)})`;
+    // return lazyResult`Date(${format(value.toISOString(), seen)})`;
+    return lazyResult(['Date(', ')'], format(value.toISOString(), seen));
   }
   if (value instanceof Error) {
-    return lazyResult`error ${value.name || 'Error'}(${format(value.message, seen)})`;
+    // return lazyResult`error ${value.name || 'Error'}(${format(value.message, seen)})`;
+    return lazyResult(['error ', '(', ')'], value.name || 'Error', format(value.message, seen));
   }
   if (value instanceof RegExp) {
-    return lazyResult`${value}`;
+    // return lazyResult`${value}`;
+    return lazyResult(['', ''], value);
   }
   if (typeof Map !== "undefined" && value instanceof Map) {
-    let contents = Array.from(value).map(pair => lazyString`${format(pair[0], seen)} => ${format(pair[1], seen)}`);
-    return lazyResult`Map {${contents}}`(join);
+    var contents = Array.from(value).map(function (pair) { 
+      // return lazyString`${format(pair[0], seen)} => ${format(pair[1], seen)}`;
+      return lazyString(['', ' => ', ''], format(pair[0], seen), format(pair[1], seen));
+    });
+    return lazyResult(['Map {', '}'], contents)(join);
   }
   if (typeof Set !== "undefined" && value instanceof Set) {
-    let contents = Array.from(value).map(value => format(value, seen));
-    return lazyResult`Set {${contents}}`(join);
+    var contents = Array.from(value).map(function (value) { return format(value, seen); });
+    return lazyResult(['Set {', '}'], contents)(join);
   }
 
-  let tag = Symbol.toStringTag && Symbol.toStringTag in value
+  var tag = Symbol.toStringTag && Symbol.toStringTag in value
     ? value[Symbol.toStringTag]
     : Object.getPrototypeOf(value) === null ? '[Object: null prototype]' : 'Object';
-  let keys = Reflect.ownKeys(value).filter(key => getOwnPropertyDescriptor(value, key).enumerable);
-  let contents = keys.map(key => lazyString`${escapeKey(key)}: ${format(value[key], seen)}`);
-  return lazyResult`${tag ? `${tag} ` : ''}{${contents}}`(String, join);
+  var keys = Reflect.ownKeys(value).filter(function (key) { return getOwnPropertyDescriptor(value, key).enumerable; });
+  var contents = keys.map(function (key) {
+    // return lazyString`${escapeKey(key)}: ${format(value[key], seen)}`;
+    return lazyString(['', ': ', ''], escapeKey(key), format(value[key], seen));
+  });
+  // return lazyResult`${tag ? `${tag} ` : ''}{${contents}}`(String, join);
+  return lazyResult(['', '{', '}'], tag ? tag + ' ' : '', contents)(String, join);
 };
 })();
 
